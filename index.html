@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador M3U8 para Google APIs - Importador Avanzado</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0 20px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 500;
+            color: #718096;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            margin-bottom: -2px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .url-input, .text-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .url-input:focus, .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .url-list {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .url-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .url-item input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .url-item button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .url-item button:hover {
+            background: #cc0000;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+        }
+        
+        .btn-info {
+            background: #4299e1;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .result {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .alert-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Generador M3U8 para Google APIs</h1>
+            <p>Convierte tus URLs en listas M3U8 compatibles con Google APIs y reproductores IPTV</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('manual')">📝 Edición Manual</button>
+            <button class="tab" onclick="switchTab('import')">📤 Importar URLs</button>
+            <button class="tab" onclick="switchTab('preview')">👁️ Vista Previa</button>
+        </div>
+        
+        <div class="content">
+            <!-- Tab Manual -->
+            <div id="manualTab" class="tab-content active">
+                <div class="section">
+                    <div class="section-title">
+                        <span>📺 URLs de tus canales</span>
+                        <span class="stats" style="margin:0; padding:5px 10px; font-size:12px;" id="urlCount">0 URLs</span>
+                    </div>
+                    <div id="urlsContainer"></div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="addUrl()">➕ Agregar URL</button>
+                        <button class="btn btn-secondary" onclick="loadDefaultUrls()">📋 Cargar URLs por defecto</button>
+                        <button class="btn btn-danger" onclick="clearAll()">🗑️ Limpiar todo</button>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">🏷️ Configuración</div>
+                    <input type="text" id="playlistName" class="url-input" placeholder="Nombre de la lista (ej: Mi Lista M3U8)" value="Mi Lista M3U8">
+                </div>
+                
+                <div class="section">
+                    <div class="btn-group">
+                        <button class="btn" onclick="generateM3U8()">🎯 Generar M3U8</button>
+                        <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copiar al portapapeles</button>
+                        <button class="btn btn-secondary" onclick="downloadM3U8()">💾 Descargar archivo</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Importar -->
+            <div id="importTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">📁 Importar desde archivo local</div>
+                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8,.json,.csv">
+                        <div>📂 Haz clic o arrastra un archivo</div>
+                        <div style="font-size: 12px; margin-top: 10px; color: #718096;">Formatos soportados: .txt, .m3u, .m3u8, .json, .csv</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">🌐 Importar desde URL remota</div>
+                    <input type="text" id="remoteUrl" class="url-input" placeholder="https://ejemplo.com/lista.m3u8">
+                    <div class="btn-group">
+                        <button class="btn btn-info" onclick="importFromUrl()">📥 Importar desde URL</button>
+                        <button class="btn btn-secondary" onclick="testUrl()">🔍 Probar URL</button>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📝 Importar desde texto</div>
+                    <textarea id="textImport" class="text-input" rows="5" placeholder="Pega aquí las URLs (una por línea)&#10;Ejemplo:&#10;http://ejemplo.com/canal1.m3u8&#10;http://ejemplo.com/canal2.m3u8"></textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-info" onclick="importFromText()">📝 Importar desde texto</button>
+                        <button class="btn btn-secondary" onclick="parseClipboard()">📋 Importar desde portapapeles</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Vista Previa -->
+            <div id="previewTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">👁️ Vista Previa de URLs</div>
+                    <div id="previewContainer" style="background: #f5f5f5; border-radius: 8px; padding: 15px; max-height: 500px; overflow-y: auto;">
+                        <p style="color: #718096;">No hay URLs cargadas</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="result" class="result" style="display: none;">
+                <div class="section-title">📄 Resultado M3U8</div>
+                <div id="alertMessage"></div>
+                <pre id="m3u8Content"></pre>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="copyApiUrl()">🔗 Copiar URL de API</button>
+                    <button class="btn btn-secondary" onclick="testInPlayer()">🎬 Probar en reproductor</button>
+                    <button class="btn btn-secondary" onclick="exportToFile()">💾 Exportar URLs</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let urls = [];
+        
+        // URLs por defecto
+        const defaultUrls = [
+            'http://gultv.com:8080/live/Moneda422/Rapido23/61678.m3u8',
+            'http://gultv.com:8080/live/Moneda422/Rapido23/61679.m3u8',
+            'http://gultv.com:8080/live/Moneda422/Rapido23/61683.m3u8',
+            'http://gultv.com:8080/live/Moneda422/Rapido23/61684.m3u8'
+        ];
+        
+        function switchTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Mostrar tab seleccionado
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Actualizar vista previa si es necesario
+            if (tabName === 'preview') {
+                updatePreview();
+            }
+        }
+        
+        function updatePreview() {
+            const container = document.getElementById('previewContainer');
+            if (urls.length === 0) {
+                container.innerHTML = '<p style="color: #718096;">No hay URLs cargadas</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong>Total: ${urls.length} URLs</strong>
+                </div>
+                ${urls.map((url, index) => `
+                    <div style="background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; border-left: 3px solid #667eea;">
+                        <div style="font-weight: bold; color: #667eea;">Canal ${index + 1}</div>
+                        <div style="font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 5px;">${escapeHtml(url)}</div>
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        function renderUrls() {
+            const container = document.getElementById('urlsContainer');
+            if (urls.length === 0) {
+                container.innerHTML = '<div class="alert alert-error">No hay URLs agregadas. Agrega al menos una URL.</div>';
+                document.getElementById('urlCount').innerHTML = '0 URLs';
+                return;
+            }
+            
+            document.getElementById('urlCount').innerHTML = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+            
+            container.innerHTML = `
+                <div class="url-list">
+                    ${urls.map((url, index) => `
+                        <div class="url-item">
+                            <input type="text" value="${escapeHtml(url)}" onchange="updateUrl(${index}, this.value)" placeholder="URL del canal">
+                            <button onclick="removeUrl(${index})">Eliminar</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function addUrl() {
+            urls.push('');
+            renderUrls();
+            updatePreview();
+        }
+        
+        function removeUrl(index) {
+            urls.splice(index, 1);
+            renderUrls();
+            updatePreview();
+        }
+        
+        function updateUrl(index, value) {
+            urls[index] = value;
+            updatePreview();
+        }
+        
+        function loadDefaultUrls() {
+            urls = [...defaultUrls];
+            renderUrls();
+            updatePreview();
+            showAlert('URLs por defecto cargadas', 'success');
+        }
+        
+        function clearAll() {
+            urls = [];
+            renderUrls();
+            updatePreview();
+            document.getElementById('result').style.display = 'none';
+            showAlert('Todos los campos han sido limpiados', 'success');
+        }
+        
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Importar desde archivo
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                importUrlsFromContent(content, file.name);
+            };
+            reader.readAsText(file);
+        });
+        
+        function importUrlsFromContent(content, filename) {
+            let importedUrls = [];
+            
+            // Detectar formato
+            if (filename.endsWith('.json')) {
+                try {
+                    const data = JSON.parse(content);
+                    if (Array.isArray(data)) {
+                        importedUrls = data;
+                    } else if (data.urls && Array.isArray(data.urls)) {
+                        importedUrls = data.urls;
+                    } else {
+                        throw new Error('Formato JSON inválido');
+                    }
+                } catch (error) {
+                    showAlert('Error al parsear JSON: ' + error.message, 'error');
+                    return;
+                }
+            } 
+            else if (filename.endsWith('.m3u') || filename.endsWith('.m3u8')) {
+                // Parsear M3U
+                const lines = content.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line && !line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
+                        importedUrls.push(line);
+                    }
+                }
+            }
+            else {
+                // TXT o CSV - una URL por línea
+                const lines = content.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line && (line.startsWith('http://') || line.startsWith('https://'))) {
+                        importedUrls.push(line);
+                    }
+                }
+            }
+            
+            if (importedUrls.length === 0) {
+                showAlert('No se encontraron URLs válidas en el archivo', 'error');
+                return;
+            }
+            
+            urls = [...urls, ...importedUrls];
+            renderUrls();
+            updatePreview();
+            showAlert(`✅ Importadas ${importedUrls.length} URLs desde ${filename}`, 'success');
+        }
+        
+        // Importar desde URL remota
+        async function importFromUrl() {
+            const remoteUrl = document.getElementById('remoteUrl').value.trim();
+            if (!remoteUrl) {
+                showAlert('Por favor ingresa una URL', 'error');
+                return;
+            }
+            
+            showAlert('⏳ Descargando lista remota...', 'info');
+            
+            try {
+                const response = await fetch(remoteUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const content = await response.text();
+                importUrlsFromContent(content, remoteUrl.split('/').pop());
+            } catch (error) {
+                showAlert('Error al descargar: ' + error.message, 'error');
+            }
+        }
+        
+        // Test URL
+        async function testUrl() {
+            const remoteUrl = document.getElementById('remoteUrl').value.trim();
+            if (!remoteUrl) {
+                showAlert('Por favor ingresa una URL', 'error');
+                return;
+            }
+            
+            showAlert('⏳ Probando URL...', 'info');
+            
+            try {
+                const response = await fetch(remoteUrl);
+                if (response.ok) {
+                    showAlert('✅ URL accesible! Código: ' + response.status, 'success');
+                } else {
+                    showAlert('❌ Error: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ No se pudo acceder a la URL', 'error');
+            }
+        }
+        
+        // Importar desde texto
+        function importFromText() {
+            const text = document.getElementById('textImport').value;
+            if (!text.trim()) {
+                showAlert('Por favor ingresa texto', 'error');
+                return;
+            }
+            
+            const lines = text.split('\n');
+            const importedUrls = [];
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line && (line.startsWith('http://') || line.startsWith('https://'))) {
+                    importedUrls.push(line);
+                }
+            }
+            
+            if (importedUrls.length === 0) {
+                showAlert('No se encontraron URLs válidas', 'error');
+                return;
+            }
+            
+            urls = [...urls, ...importedUrls];
+            renderUrls();
+            updatePreview();
+            showAlert(`✅ Importadas ${importedUrls.length} URLs desde texto`, 'success');
+            document.getElementById('textImport').value = '';
+        }
+        
+        // Importar desde portapapeles
+        async function parseClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('textImport').value = text;
+                importFromText();
+            } catch (error) {
+                showAlert('Error al leer portapapeles: ' + error.message, 'error');
+            }
+        }
+        
+        async function generateM3U8() {
+            const validUrls = urls.filter(url => url.trim() !== '');
+            
+            if (validUrls.length === 0) {
+                showAlert('Por favor, agrega al menos una URL válida', 'error');
+                return;
+            }
+            
+            const playlistName = document.getElementById('playlistName').value || 'Mi Lista M3U8';
+            
+            try {
+                // Generar M3U8 localmente para vista previa
+                let m3u8Content = '#EXTM3U\n';
+                m3u8Content += `#PLAYLIST:${playlistName}\n`;
+                m3u8Content += `#GENERATED:${new Date().toISOString()}\n`;
+                m3u8Content += `#VERSION:3\n`;
+                m3u8Content += `#ALLOW-CACHE:YES\n\n`;
+                
+                validUrls.forEach((url, index) => {
+                    const channelNumber = (index + 1).toString().padStart(2, '0');
+                    const channelName = `Canal ${channelNumber}`;
+                    m3u8Content += `#EXTINF:-1 tvg-id="channel_${channelNumber}" tvg-name="${channelName}" tvg-logo="" group-title="General",${channelName}\n`;
+                    m3u8Content += `${url}\n`;
+                });
+                
+                document.getElementById('m3u8Content').textContent = m3u8Content;
+                document.getElementById('result').style.display = 'block';
+                
+                // Guardar en localStorage
+                localStorage.setItem('currentM3U8', m3u8Content);
+                localStorage.setItem('currentUrls', JSON.stringify(validUrls));
+                localStorage.setItem('currentPlaylistName', playlistName);
+                
+                showAlert('✅ M3U8 generado correctamente', 'success');
+                
+                // Scroll al resultado
+                document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                showAlert('Error al generar M3U8: ' + error.message, 'error');
+            }
+        }
+        
+        function copyToClipboard() {
+            const m3u8Content = document.getElementById('m3u8Content').textContent;
+            navigator.clipboard.writeText(m3u8Content).then(() => {
+                showAlert('✅ Contenido copiado al portapapeles', 'success');
+            }).catch(() => {
+                showAlert('❌ Error al copiar', 'error');
+            });
+        }
+        
+        function downloadM3U8() {
+            const m3u8Content = document.getElementById('m3u8Content').textContent;
+            const playlistName = document.getElementById('playlistName').value || 'playlist';
+            const blob = new Blob([m3u8Content], { type: 'application/vnd.apple.mpegurl' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${playlistName.replace(/[^a-z0-9]/gi, '_')}.m3u8`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAlert('✅ Archivo descargado', 'success');
+        }
+        
+        function exportToFile() {
+            const validUrls = urls.filter(url => url.trim() !== '');
+            if (validUrls.length === 0) {
+                showAlert('No hay URLs para exportar', 'error');
+                return;
+            }
+            
+            const content = validUrls.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `urls_export_${new Date().toISOString().slice(0,19)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAlert('✅ URLs exportadas correctamente', 'success');
+        }
+        
+        function copyApiUrl() {
+            const validUrls = urls.filter(url => url.trim() !== '');
+            if (validUrls.length === 0) {
+                showAlert('No hay URLs para generar la API', 'error');
+                return;
+            }
+            
+            const apiUrl = `${window.location.origin}/api/playlist?urls=${encodeURIComponent(JSON.stringify(validUrls))}&name=${encodeURIComponent(document.getElementById('playlistName').value)}`;
+            navigator.clipboard.writeText(apiUrl).then(() => {
+                showAlert('✅ URL de API copiada al portapapeles', 'success');
+            }).catch(() => {
+                showAlert('❌ Error al copiar', 'error');
+            });
+        }
+        
+        function testInPlayer() {
+            const validUrls = urls.filter(url => url.trim() !== '');
+            if (validUrls.length === 0) {
+                showAlert('No hay URLs para probar', 'error');
+                return;
+            }
+            
+            const apiUrl = `${window.location.origin}/api/playlist?urls=${encodeURIComponent(JSON.stringify(validUrls))}&name=${encodeURIComponent(document.getElementById('playlistName').value)}`;
+            window.open(apiUrl, '_blank');
+        }
+        
+        // Drag and drop para archivos
+        const dropZone = document.querySelector('.file-upload');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#667eea';
+                dropZone.style.background = '#f7fafc';
+            });
+            
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#cbd5e0';
+                dropZone.style.background = '';
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#cbd5e0';
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        importUrlsFromContent(e.target.result, file.name);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+        
+        // Inicializar con URLs por defecto
+        loadDefaultUrls();
+    </script>
+</body>
+</html>
